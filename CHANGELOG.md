@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-08-15
+
+### Added
+- `SECURITY.md` recorded the Claude Fable review of 0.0.7 (`d3fb3a5`).
+- `/fast` warned that priority tier raises OpenAI token price and persists.
+
+### Changed
+- `/fast` injected `service_tier` only for OpenAI, Codex, and Azure OpenAI `gpt-5*` models.
+- Settings writes followed a symlink and kept the original file mode.
+
 ## [0.0.7] - 2026-08-15
 
 ### Changed

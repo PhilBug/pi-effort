@@ -7,8 +7,10 @@ import {
   type EffortModel,
   cycleLevel,
   getAvailableThinkingLevels,
+  FAST_ON_NOTICE,
   getFastMode,
   getUserFacingLevels,
+  isFastEligible,
   isEffortAlias,
   parseEffortCommand,
   parseFastCommand,
@@ -31,20 +33,9 @@ function isFastModelId(modelId: string): boolean {
   return modelId.startsWith("gpt-5");
 }
 
-function isFastModeApplicable(model: EffortModel | null | undefined): boolean {
-  return typeof model?.id === "string" && isFastModelId(model.id);
-}
-
-function requestEffortRender(ctx: ExtensionContext): void {
-  // Clear older pi-effort aggregate status lines. Dedicated powerline custom
-  // items read pi-effort-thinking / pi-effort-fast instead.
-  ctx.ui.setStatus("effort", undefined);
-}
-
 function updateEffortUi(ctx: ExtensionContext, current: string, fastMode: boolean, updateWorkingMessage = true): void {
-  requestEffortRender(ctx);
   ctx.ui.setStatus("pi-effort-thinking", `think:${current}`);
-  ctx.ui.setStatus("pi-effort-fast", fastMode && isFastModeApplicable(ctx.model) ? "fast" : undefined);
+  ctx.ui.setStatus("pi-effort-fast", fastMode && isFastEligible(ctx.model) ? "fast" : undefined);
   if (updateWorkingMessage) {
     ctx.ui.setWorkingMessage(current === "off" ? undefined : `Working (${current} effort)...`);
   }
@@ -94,13 +85,14 @@ export default function effortExtension(pi: ExtensionAPI): void {
 
   // ─── CLI flag ────────────────────────────────────────────────────
   pi.registerFlag("effort", {
-    description: "Initial thinking effort level (min|max|minimal|low|medium|high|xhigh)",
+    description: "Initial thinking effort level (min|max|minimal|low|medium|high|xhigh|max)",
     type: "string",
   });
 
   // ─── Provider hook: fast mode maps to OpenAI/Codex priority tier ──
-  pi.on("before_provider_request", (event) => {
+  pi.on("before_provider_request", (event, ctx) => {
     if (!fastMode) return undefined;
+    if (!isFastEligible(ctx.model)) return undefined;
 
     const payload = event.payload;
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -144,6 +136,9 @@ export default function effortExtension(pi: ExtensionAPI): void {
     currentModel = ctx.model ?? null;
     // Sync current effort labels
     syncEffortUi(ctx);
+    if (fastMode) {
+      ctx.ui.notify(FAST_ON_NOTICE, "warning");
+    }
 
     // Apply --effort CLI flag if present
     const flagValue = pi.getFlag("effort");
@@ -211,7 +206,7 @@ export default function effortExtension(pi: ExtensionAPI): void {
     }
     fastMode = enabled;
     syncEffortUi(ctx);
-    ctx.ui.notify(`Fast mode ${fastMode ? "enabled" : "disabled"}.`, "info");
+    ctx.ui.notify(fastMode ? FAST_ON_NOTICE : "Fast mode disabled.", fastMode ? "warning" : "info");
   }
 
   // ─── /effort command ─────────────────────────────────────────────

@@ -1,6 +1,6 @@
 {
   "name": "pi-effort",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "author": "Ricardo A S Frantz",
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
   "description": "Pi extension for controlling thinking effort with model-adaptive min/max aliases",
   "files": [
     "CHANGELOG.md",
+    "SECURITY.md",
     "effort.ts",
     "index.ts",
     "README.md",

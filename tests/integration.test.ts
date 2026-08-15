@@ -37,7 +37,7 @@ const xhighModel: Model<any> = {
   id: "gpt-5.4",
   name: "GPT-5.4",
   api: "openai-completions",
-  provider: "openrouter",
+  provider: "openai",
   baseUrl: "https://openrouter.ai/api/v1",
   reasoning: true,
   thinkingLevelMap: { xhigh: "xhigh" },
@@ -198,9 +198,29 @@ test("runtime /fast injects OpenAI priority service tier for GPT-5 requests", as
     assert.ok(handlers?.[0]);
 
     const payload = { model: "gpt-5.5", input: [], stream: true };
-    const result = await handlers[0]({ type: "before_provider_request", payload }, {});
+    const result = await handlers[0]({ type: "before_provider_request", payload }, { model: xhighModel });
 
     assert.deepEqual(result, { ...payload, service_tier: "priority" });
+  } finally {
+    cleanupSession(previousAgentDir);
+  }
+});
+
+test("runtime /fast does not inject service_tier for a non-OpenAI gpt-5 id", async () => {
+  const { session, extension, previousAgentDir } = await createTestSession(xhighModel, "medium", "medium");
+
+  try {
+    await session.prompt("/fast on");
+    const handlers = extension.handlers.get("before_provider_request");
+    assert.ok(handlers?.[0]);
+
+    const payload = { model: "gpt-5.5", input: [] };
+    const result = await handlers[0](
+      { type: "before_provider_request", payload },
+      { model: { ...xhighModel, provider: "openrouter" } },
+    );
+
+    assert.equal(result, undefined);
   } finally {
     cleanupSession(previousAgentDir);
   }
@@ -215,7 +235,7 @@ test("runtime /fast preserves explicit service tier overrides", async () => {
     assert.ok(handlers?.[0]);
 
     const payload = { model: "gpt-5.5", service_tier: "default" };
-    const result = await handlers[0]({ type: "before_provider_request", payload }, {});
+    const result = await handlers[0]({ type: "before_provider_request", payload }, { model: xhighModel });
 
     assert.equal(result, undefined);
   } finally {

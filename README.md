@@ -2,6 +2,8 @@
 
 Extension for [pi](https://github.com/badlogic/pi-mono): small command surface for reasoning effort and OpenAI/Codex fast mode.
 
+Claude Fable reviewed 0.0.7 on 2026-08-15. See [SECURITY.md](SECURITY.md).
+
 ## Commands
 
 Exactly two slash commands are exposed:
@@ -34,8 +36,13 @@ Examples:
 ## Fast mode
 
 Fast mode is the latency/service-tier knob. When enabled, `pi-effort` adds
-`service_tier: "priority"` to GPT-5 / OpenAI-Codex provider requests that do not
-already specify a tier.
+`service_tier: "priority"` only for OpenAI, Codex, and Azure OpenAI requests
+whose model id starts with `gpt-5`. That tier is billed at a higher token
+price. The setting is global and persists until `/fast off`. A session that
+starts with it on prints a warning.
+
+`/effort` calls Pi's `setThinkingLevel`. Pi saves that as
+`defaultThinkingLevel` for later sessions.
 
 ```text
 /fast      # toggle

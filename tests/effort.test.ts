@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { ThinkingLevel } from "@earendil-works/pi-ai";
@@ -18,6 +18,7 @@ import {
   resolveMinLevel,
   cycleLevel,
   writeFastMode,
+  isFastEligible,
 } from "../effort.ts";
 
 // If @earendil-works/pi-ai adds a new ThinkingLevel (e.g. "xmax"), this
@@ -232,6 +233,25 @@ test("writeFastMode preserves unrelated settings and writes pi-effort namespace"
 
   writeFastMode(settingsPath, false);
   assert.equal(getFastMode(settingsPath), false);
+});
+
+test("isFastEligible requires an OpenAI-family provider and a gpt-5 model id", () => {
+  assert.equal(isFastEligible({ id: "gpt-5.4", provider: "openai" }), true);
+  assert.equal(isFastEligible({ id: "gpt-5.4", provider: "openai-codex" }), true);
+  assert.equal(isFastEligible({ id: "gpt-5.4", provider: "openrouter" }), false);
+  assert.equal(isFastEligible({ id: "claude-opus-4.6", provider: "openai" }), false);
+  assert.equal(isFastEligible({ id: "gpt-5.4" }), false);
+});
+
+test("writeFastMode keeps a settings.json symlink and writes through it", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pi-effort-"));
+  const realPath = join(dir, "real-settings.json");
+  const linkPath = join(dir, "settings.json");
+  writeFileSync(realPath, "{}\n");
+  symlinkSync(realPath, linkPath);
+  writeFastMode(linkPath, true);
+  assert.equal(lstatSync(linkPath).isSymbolicLink(), true);
+  assert.equal(JSON.parse(readFileSync(realPath, "utf-8"))["pi-effort"].fastMode, true);
 });
 
 test("getFastMode returns false when unset or corrupt", () => {

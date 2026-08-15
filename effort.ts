@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
 import type { Model, ThinkingLevel } from "@earendil-works/pi-ai";
@@ -21,6 +30,12 @@ export const SEMANTIC_ALIASES = ["min", "max"] as const;
 /** Fast mode subcommands. */
 export const FAST_MODE_ACTIONS = ["on", "off"] as const;
 
+/** Providers that accept OpenAI `service_tier: "priority"`. */
+export const FAST_PROVIDERS = ["openai", "openai-codex", "azure-openai-responses"] as const;
+
+export const FAST_ON_NOTICE =
+  'Fast mode ON: OpenAI priority tier (~2x token price / faster Codex quota). Persists until /fast off.';
+
 export type EffortLevel = (typeof ALL_LEVELS)[number];
 export type EffortAlias = (typeof SEMANTIC_ALIASES)[number];
 export type FastModeAction = (typeof FAST_MODE_ACTIONS)[number];
@@ -41,6 +56,13 @@ export function isEffortAlias(value: string): value is EffortAlias {
   return SEMANTIC_ALIASES.includes(value as EffortAlias);
 }
 
+/** True when `/fast` may add `service_tier` for this model. */
+export function isFastEligible(model: { id?: string; provider?: string } | null | undefined): boolean {
+  if (!model?.id || typeof model.provider !== "string") return false;
+  if (!(FAST_PROVIDERS as readonly string[]).includes(model.provider)) return false;
+  return model.id.startsWith("gpt-5");
+}
+
 export type EffortCommand =
   | { kind: "set-session"; level: EffortLevel }
   | { kind: "set-min" }
@@ -48,7 +70,9 @@ export type EffortCommand =
 
 export type FastCommand = { kind: "fast-set"; enabled: boolean } | { kind: "fast-toggle" };
 
-export type EffortModel = Pick<Model<any>, "id" | "reasoning" | "thinkingLevelMap">;
+export type EffortModel = Pick<Model<any>, "id" | "reasoning" | "thinkingLevelMap"> & {
+  provider?: string;
+};
 
 // ─── Suggestion helpers ─────────────────────────────────────────────
 
@@ -202,13 +226,30 @@ export function readSettingsObject(settingsPath: string): Record<string, unknown
 
 function writeSettingsObject(settingsPath: string, settings: Record<string, unknown>): void {
   const content = `${JSON.stringify(settings, null, 2)}\n`;
-  const dir = dirname(settingsPath);
+  let targetPath = settingsPath;
+  let mode: number | undefined;
+  try {
+    const st = lstatSync(settingsPath);
+    mode = st.mode;
+    if (st.isSymbolicLink()) {
+      targetPath = realpathSync(settingsPath);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const dir = dirname(targetPath);
   mkdirSync(dir, { recursive: true });
   const tmpPath = join(dir, `.settings.json.tmp.${process.pid}.${randomUUID()}`);
 
   try {
     writeFileSync(tmpPath, content, "utf-8");
-    renameSync(tmpPath, settingsPath);
+    if (mode !== undefined) {
+      chmodSync(tmpPath, mode);
+    }
+    renameSync(tmpPath, targetPath);
   } catch (error) {
     try {
       unlinkSync(tmpPath);
