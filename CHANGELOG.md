@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-08-15
+
+### Changed
+- Imports and peers targeted `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` 0.84.
+- `/effort` tracked Pi 0.84 `max` as a thinking level. The `max` token stayed the highest-level alias.
+
 ## [0.0.6] - 2026-08-15
 
 ### Added

@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { getAgentDir } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import {
   USER_LEVELS,
   type EffortLevel,
@@ -222,7 +222,7 @@ export default function effortExtension(pi: ExtensionAPI): void {
       const tokens = value.split(/\s+/).filter(Boolean);
       const trailingSpace = /\s$/.test(value);
 
-      const modelLevels = getUserFacingLevels(currentModel);
+      const modelLevels = getUserFacingLevels(currentModel).filter((level) => level !== "max");
       const options = modelLevels.length > 0 ? ["min", ...modelLevels, "max"] : [];
 
       if (tokens.length === 0) {

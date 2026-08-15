@@ -3,21 +3,19 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Model, ThinkingLevel } from "@mariozechner/pi-ai";
+import type { Model, ThinkingLevel } from "@earendil-works/pi-ai";
 import {
-  AuthStorage,
   createAgentSession,
   createEventBus,
-  ModelRegistry,
   SessionManager,
   SettingsManager,
   type LoadExtensionsResult,
   type ResourceLoader,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import {
   createExtensionRuntime,
   loadExtensionFromFactory,
-} from "../node_modules/@mariozechner/pi-coding-agent/dist/core/extensions/loader.js";
+} from "../node_modules/@earendil-works/pi-coding-agent/dist/core/extensions/loader.js";
 import effortExtension from "../index.ts";
 
 type PiThinkingLevel = ThinkingLevel | "off";
@@ -70,7 +68,9 @@ function createResourceLoader(extensionsResult: LoadExtensionsResult): ResourceL
     getThemes: () => ({ themes: [], diagnostics: [] }),
     getAgentsFiles: () => ({ agentsFiles: [] }),
     getSystemPrompt: () => undefined,
+    getSystemPromptSource: () => undefined,
     getAppendSystemPrompt: () => [],
+    getAppendSystemPromptSources: () => [],
     extendResources: () => {},
     reload: async () => {},
   };
@@ -120,9 +120,6 @@ async function createTestSession(
     settingsManager.applyOverrides({ defaultThinkingLevel });
   }
 
-  const authStorage = AuthStorage.create(join(config.agentDir, "auth.json"));
-  authStorage.set("openrouter", { type: "api_key", key: "test" });
-  const modelRegistry = ModelRegistry.create(authStorage, join(config.agentDir, "models.json"));
   const sessionManager = SessionManager.inMemory();
 
   const { session } = await createAgentSession({
@@ -131,8 +128,6 @@ async function createTestSession(
     model,
     thinkingLevel,
     settingsManager,
-    authStorage,
-    modelRegistry,
     sessionManager,
     resourceLoader,
   });

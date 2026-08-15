@@ -1,18 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { getSupportedThinkingLevels } from "@mariozechner/pi-ai";
-import type { Model, ThinkingLevel } from "@mariozechner/pi-ai";
+import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
+import type { Model, ThinkingLevel } from "@earendil-works/pi-ai";
 
 /**
  * All levels the extension knows about, including "off" (Pi's internal state).
  * The slash-command surface intentionally exposes only model reasoning options.
+ * `/effort max` stays the highest-level alias. It is not the Pi `max` token.
  */
-export const ALL_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
+export const ALL_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 export const ALL_LEVELS_WITHOUT_XHIGH = ["off", "minimal", "low", "medium", "high"] as const;
 
 /** Levels shown to users in usage and tab completion. */
-export const USER_LEVELS = ["minimal", "low", "medium", "high", "xhigh"] as const satisfies readonly ThinkingLevel[];
+export const USER_LEVELS = ["minimal", "low", "medium", "high", "xhigh", "max"] as const satisfies readonly ThinkingLevel[];
 
 /** Semantic aliases that resolve per-model. */
 export const SEMANTIC_ALIASES = ["min", "max"] as const;

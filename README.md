@@ -76,8 +76,16 @@ The flag uses the same values as `/effort`.
 
 ## Install
 
+Requires Pi 0.84 or newer (`@earendil-works/pi-coding-agent`).
+
 ```bash
 pi install npm:pi-effort
+```
+
+Until npm has the latest tag, install from git:
+
+```bash
+pi install git:github.com/ricardofrantz/pi-effort
 ```
 
 Verify what Pi is loading:

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { ThinkingLevel } from "@mariozechner/pi-ai";
+import type { ThinkingLevel } from "@earendil-works/pi-ai";
 import {
   FAST_USAGE,
   USAGE,
@@ -20,7 +20,7 @@ import {
   writeFastMode,
 } from "../effort.ts";
 
-// If @mariozechner/pi-ai adds a new ThinkingLevel (e.g. "xmax"), this
+// If @earendil-works/pi-ai adds a new ThinkingLevel (e.g. "xmax"), this
 // refuses to compile until USER_LEVELS is extended. Removal is already
 // caught by `satisfies readonly ThinkingLevel[]` in effort.ts.
 type _UncoveredLevels = Exclude<ThinkingLevel, (typeof USER_LEVELS)[number]>;
@@ -146,6 +146,16 @@ test("resolveEffortLevel resolves semantic aliases per model", () => {
 });
 
 // ─── xhigh capability (via public functions) ─────────────────────────
+
+test("Pi 0.84 max thinking level is last when the model maps it", () => {
+  const maxModel = {
+    id: "max-model",
+    reasoning: true,
+    thinkingLevelMap: { xhigh: "xhigh", max: "max" },
+  } as const;
+  assert.equal(resolveMaxLevel(maxModel), "max");
+  assert.ok(getUserFacingLevels(maxModel).includes("max"));
+});
 
 test("xhigh capability: gpt-5.4 includes xhigh in available levels", () => {
   assert.deepEqual(getAvailableThinkingLevels(xhighReasoningModel), [
