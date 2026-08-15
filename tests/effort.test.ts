@@ -90,6 +90,16 @@ test("resolveMinLevel returns undefined for non-reasoning models", () => {
   assert.equal(resolveMinLevel(null), undefined);
 });
 
+test("resolveMinLevel uses the lowest level the model actually supports", () => {
+  const noMinimal = {
+    id: "no-minimal",
+    reasoning: true,
+    thinkingLevelMap: { minimal: null },
+  } as const;
+  assert.equal(resolveMinLevel(noMinimal), "low");
+  assert.deepEqual(getUserFacingLevels(noMinimal), ["low", "medium", "high"]);
+});
+
 test("resolveMaxLevel returns high for reasoning models without xhigh", () => {
   assert.equal(resolveMaxLevel(standardReasoningModel), "high");
 });
@@ -102,6 +112,26 @@ test("resolveMaxLevel returns xhigh for xhigh-capable models", () => {
 test("resolveMaxLevel returns undefined for non-reasoning models", () => {
   assert.equal(resolveMaxLevel({ id: "plain-model", reasoning: false }), undefined);
   assert.equal(resolveMaxLevel(null), undefined);
+});
+
+test("resolveMaxLevel uses the highest level the model actually supports", () => {
+  const noHigh = {
+    id: "no-high",
+    reasoning: true,
+    thinkingLevelMap: { high: null, xhigh: null },
+  } as const;
+  assert.equal(resolveMaxLevel(noHigh), "medium");
+  assert.deepEqual(getUserFacingLevels(noHigh), ["minimal", "low", "medium"]);
+});
+
+test("resolveMin/Max return undefined when every thinking level is nulled", () => {
+  const none = {
+    id: "none",
+    reasoning: true,
+    thinkingLevelMap: { minimal: null, low: null, medium: null, high: null, xhigh: null },
+  } as const;
+  assert.equal(resolveMinLevel(none), undefined);
+  assert.equal(resolveMaxLevel(none), undefined);
 });
 
 test("resolveEffortLevel resolves semantic aliases per model", () => {

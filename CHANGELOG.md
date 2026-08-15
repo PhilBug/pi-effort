@@ -6,12 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-08-15
+
 ### Added
-- `/fast` toggle plus `/fast on|off` overrides for OpenAI/Codex priority service tier.
-- Compact footer status keys for powerline custom items: `pi-effort-thinking` and `pi-effort-fast`.
+- `/fast` toggle and `/fast on|off` for the OpenAI/Codex priority service tier.
+- `pi-effort-thinking` and `pi-effort-fast` status keys for compact footers.
 
 ### Changed
-- Simplified the slash-command surface to `/effort {min|minimal|low|medium|high|xhigh|max}` and `/fast [on|off]`.
+- `/effort` accepted only `{min|minimal|low|medium|high|xhigh|max}`.
+- `/effort min` selected the lowest level the model supports.
+- `/effort max` selected the highest level the model supports.
 
 ## [0.0.5] - 2026-05-04
 

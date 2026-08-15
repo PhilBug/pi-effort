@@ -148,7 +148,7 @@ export function getUserFacingLevels(model: EffortModel | null | undefined): Effo
  */
 export function resolveMinLevel(model: EffortModel | null | undefined): EffortLevel | undefined {
   if (!model?.reasoning) return undefined;
-  return "minimal";
+  return getUserFacingLevels(model)[0];
 }
 
 /**
@@ -157,7 +157,8 @@ export function resolveMinLevel(model: EffortModel | null | undefined): EffortLe
  */
 export function resolveMaxLevel(model: EffortModel | null | undefined): EffortLevel | undefined {
   if (!model?.reasoning) return undefined;
-  return getAvailableThinkingLevels(model).includes("xhigh") ? "xhigh" : "high";
+  const levels = getUserFacingLevels(model);
+  return levels[levels.length - 1];
 }
 
 /** Resolve a user-facing level or semantic alias against the active model. */
