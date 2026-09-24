@@ -283,6 +283,13 @@ export function writeFastMode(settingsPath: string, enabled: boolean): void {
   writeSettingsObject(settingsPath, settings);
 }
 
+/** Persist Pi's own startup default so the level survives restarts. */
+export function writeDefaultThinkingLevel(settingsPath: string, level: EffortLevel): void {
+  const settings = readSettingsObject(settingsPath);
+  settings.defaultThinkingLevel = level;
+  writeSettingsObject(settingsPath, settings);
+}
+
 // ─── Help text ──────────────────────────────────────────────────────
 
 export const USAGE = "Usage: /effort [min|minimal|low|medium|high|xhigh|max]";

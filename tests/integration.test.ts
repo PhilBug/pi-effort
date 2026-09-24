@@ -147,11 +147,13 @@ function cleanupSession(previousAgentDir: string | undefined) {
 // ─── Basic command tests ────────────────────────────────────────────
 
 test("runtime command changes session thinking level", async () => {
-  const { session, previousAgentDir } = await createTestSession(reasoningModel, "medium", "medium");
+  const { session, agentDir, previousAgentDir } = await createTestSession(reasoningModel, "medium", "medium");
 
   try {
     await session.prompt("/effort high");
     assert.equal(session.thinkingLevel, "high" as ThinkingLevel);
+    const persisted = JSON.parse(readFileSync(join(agentDir, "settings.json"), "utf-8"));
+    assert.equal(persisted.defaultThinkingLevel, "high");
   } finally {
     cleanupSession(previousAgentDir);
   }
