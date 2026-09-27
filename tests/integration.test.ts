@@ -359,6 +359,9 @@ test("argument completions expose only effort levels and fast on/off", async () 
     const topLevel = await command.getArgumentCompletions("");
     assert.deepEqual(topLevel?.map((item) => item.value), ["min", "minimal", "low", "medium", "high", "max"]);
 
+    const fuzzy = await command.getArgumentCompletions("hg");
+    assert.deepEqual(fuzzy?.map((item) => item.value), ["high"]);
+
     assert.equal(await command.getArgumentCompletions("default "), null);
     assert.equal(await command.getArgumentCompletions("fast "), null);
 

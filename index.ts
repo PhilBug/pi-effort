@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { DynamicBorder, getAgentDir, getSelectListTheme } from "@earendil-works/pi-coding-agent";
+import { Container, fuzzyFilter, Input, SelectList, Text } from "@earendil-works/pi-tui";
 import {
   USER_LEVELS,
   type EffortLevel,
@@ -40,6 +41,60 @@ function updateEffortUi(ctx: ExtensionContext, current: string, fastMode: boolea
   if (updateWorkingMessage) {
     ctx.ui.setWorkingMessage(current === "off" ? undefined : `Working (${current} effort)...`);
   }
+}
+
+// Fuzzy-filterable picker in the TUI; RPC cannot render custom components, so it falls back to select().
+async function pickEffort(ctx: ExtensionCommandContext, title: string, options: string[]): Promise<string | undefined> {
+  if (ctx.mode !== "tui") return ctx.ui.select(title, options);
+
+  return ctx.ui.custom<string | undefined>((tui, theme, kb, done) => {
+    const container = new Container();
+    const search = new Input();
+    const build = (items: string[]) => {
+      const list = new SelectList(
+        items.map((o) => ({ value: o, label: o })),
+        Math.max(1, items.length),
+        getSelectListTheme()
+      );
+      list.onSelect = (item) => done(item.value);
+      list.onCancel = () => done(undefined);
+      return list;
+    };
+    let list = build(options);
+    search.onSubmit = () => list.handleInput("\r");
+
+    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+    container.addChild(new Text(theme.fg("accent", title), 1, 0));
+    container.addChild(search);
+    const listIndex = container.children.length;
+    container.addChild(list);
+    container.addChild(new Text(theme.fg("dim", "type to filter • ↑↓ navigate • enter select • esc cancel"), 1, 0));
+    container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+
+    return {
+      get focused() {
+        return search.focused;
+      },
+      set focused(value: boolean) {
+        search.focused = value;
+      },
+      render: (width: number) => container.render(width),
+      invalidate: () => container.invalidate(),
+      handleInput(data: string) {
+        const isNav = ["tui.select.up", "tui.select.down", "tui.select.confirm", "tui.select.cancel"].some((k) =>
+          kb.matches(data, k as any)
+        );
+        if (isNav) {
+          list.handleInput(data);
+        } else {
+          search.handleInput(data);
+          list = build(fuzzyFilter(options, search.getValue(), (o) => o));
+          container.children[listIndex] = list;
+        }
+        tui.requestRender();
+      },
+    };
+  });
 }
 
 function applySessionLevel(
@@ -234,9 +289,7 @@ export default function effortExtension(pi: ExtensionAPI): void {
       }
 
       if (tokens.length === 1 && !trailingSpace) {
-        return options
-          .filter((t) => t.startsWith(tokens[0]))
-          .map((t) => ({ value: t, label: t }));
+        return fuzzyFilter(options, tokens[0], (t) => t).map((t) => ({ value: t, label: t }));
       }
 
       return null;
@@ -249,7 +302,7 @@ export default function effortExtension(pi: ExtensionAPI): void {
           ctx.ui.notify(`Thinking not available for ${modelName(ctx.model)}`, "error");
           return;
         }
-        const picked = await ctx.ui.select(`Effort (current: ${pi.getThinkingLevel()})`, ["min", ...levels, "max"]);
+        const picked = await pickEffort(ctx, `Effort (current: ${pi.getThinkingLevel()})`, ["min", ...levels, "max"]);
         if (!picked) return;
         input = picked;
       }
